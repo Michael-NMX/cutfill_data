@@ -1,4 +1,5 @@
 import pathlib
+import datetime
 import pandas as pd
 
 
@@ -16,6 +17,31 @@ def readFiles(dirpath):
 
 def extractDataFromFile(filepath):
     return pd.read_html(filepath, flavor='bs4')
+
+def splitTablesByCutFillColumns(data):
+    splitCutFillData = []
+    for dataTables in data:
+        projectData = dataTables[0]
+        road = projectData.iloc[1,0][10:]
+        startStation = projectData.iloc[3,0][11:]
+        endStation = projectData.iloc[4,0][9:]
+        cutHeader = pd.DataFrame([
+            'PROYECTO',
+            f'{road}',
+            'VOLÚMENES DE CORTE',
+            f'DEL KM {startStation} AL KM {endStation}',
+            f'{datetime.date.today()}'
+        ])
+        fillHeader = pd.DataFrame([
+            'PROYECTO',
+            f'{road}',
+            'VOLÚMENES DE RELLENO',
+            f'DEL KM {startStation} AL KM {endStation}',
+            f'{datetime.date.today()}'
+        ])
+        splitCutFillData.append([cutHeader, dataTables[1]])
+        splitCutFillData.append([fillHeader, dataTables[1]])
+    return splitCutFillData
 
 def createReport(data, dirpath):
     outputPath = dirpath / 'output.xlsx'
@@ -45,5 +71,6 @@ def createReport(data, dirpath):
 if __name__ == '__main__':
     dirpath = getDirpath()
     data, filepaths = readFiles(dirpath)
-    createReport(data, dirpath)
+    cutFillData = splitTablesByCutFillColumns(data)
+    createReport(cutFillData, dirpath)
     print('Done!')
