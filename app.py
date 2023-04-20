@@ -21,27 +21,30 @@ def extractDataFromFile(filepath):
 def splitTablesByCutFillColumns(data):
     splitCutFillData = []
     for dataTables in data:
-        projectData = dataTables[0]
-        road = projectData.iloc[1,0][10:]
-        startStation = projectData.iloc[3,0][11:]
-        endStation = projectData.iloc[4,0][9:]
-        cutHeader = pd.DataFrame([
-            'PROYECTO',
-            f'{road}',
-            'VOLÚMENES DE CORTE',
-            f'DEL KM {startStation} AL KM {endStation}',
-            f'{datetime.date.today()}'
-        ])
-        fillHeader = pd.DataFrame([
-            'PROYECTO',
-            f'{road}',
-            'VOLÚMENES DE RELLENO',
-            f'DEL KM {startStation} AL KM {endStation}',
-            f'{datetime.date.today()}'
-        ])
+        cutHeader, fillHeader = createHeaders(dataTables[0])
         splitCutFillData.append([cutHeader, dataTables[1]])
         splitCutFillData.append([fillHeader, dataTables[1]])
     return splitCutFillData
+
+def createHeaders(projectData):
+    road = projectData.iloc[1,0][10:]
+    startStation = projectData.iloc[3,0][11:]
+    endStation = projectData.iloc[4,0][9:]
+    cutHeader = pd.DataFrame([
+        'PROYECTO',
+        f'{road}',
+        'VOLÚMENES DE CORTE',
+        f'DEL KM {startStation} AL KM {endStation}',
+        f'{datetime.date.today()}'
+    ])
+    fillHeader = pd.DataFrame([
+        'PROYECTO',
+        f'{road}',
+        'VOLÚMENES DE RELLENO',
+        f'DEL KM {startStation} AL KM {endStation}',
+        f'{datetime.date.today()}'
+    ])
+    return cutHeader, fillHeader
 
 def createReport(data, dirpath):
     outputPath = dirpath / 'output.xlsx'
