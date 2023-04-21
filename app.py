@@ -20,11 +20,14 @@ def extractDataFromFile(filepath):
 
 def splitTablesByCutFillColumns(data):
     splitCutFillData = []
+    columnsForCut = ['Station', 'Cut Area (Sq.m.)']
+    columnsForFill = ['Station', 'Fill Area (Sq.m.)']
     for dataTables in data:
         cutHeader, fillHeader = createHeaders(dataTables[0])
         cutFillData = dataTables[1].drop(0)
-        splitCutFillData.append([cutHeader, cutFillData])
-        splitCutFillData.append([fillHeader, cutFillData])
+        cutData, fillData = getColumnData(cutFillData, columnsForCut, columnsForFill)
+        splitCutFillData.append([cutHeader, cutData])
+        splitCutFillData.append([fillHeader, fillData])
     return splitCutFillData
 
 def createHeaders(projectData):
@@ -46,6 +49,11 @@ def createHeaders(projectData):
         f'{datetime.date.today()}'
     ])
     return cutHeader, fillHeader
+
+def getColumnData(dataTable, columnsForCut, columnsForFill):
+    cutData = dataTable[columnsForCut]
+    fillData = dataTable[columnsForFill]
+    return cutData, fillData
 
 def createReport(data, dirpath):
     outputPath = dirpath / 'output.xlsx'
