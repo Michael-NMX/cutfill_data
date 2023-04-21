@@ -102,7 +102,6 @@ def createReport(data, dirpath):
             mode='a',
             if_sheet_exists="overlay"
         ) as writer:
-            dataRows += 2
             dataTables[1].to_excel(writer, sheet_name=f'data_{i}', startrow=dataRows, index=False)
 
 
