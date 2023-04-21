@@ -27,6 +27,7 @@ def splitTablesByCutFillColumns(data):
     for dataTables in data:
         cutHeader, fillHeader = createHeaders(dataTables[0])
         cutFillData = dataTables[1].drop(0)
+        cutFillData.iloc[:, 0] = cutFillData.iloc[:, 0].apply(lambda station: float(station.replace('+', '')))
         cutData, fillData = getColumnData(cutFillData, columnsForCut, columnsForFill)
         totalRows = cutFillData.shape[0]
         startRow = cutHeader.shape[0] + 2
