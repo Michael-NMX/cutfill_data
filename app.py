@@ -22,8 +22,9 @@ def splitTablesByCutFillColumns(data):
     splitCutFillData = []
     for dataTables in data:
         cutHeader, fillHeader = createHeaders(dataTables[0])
-        splitCutFillData.append([cutHeader, dataTables[1]])
-        splitCutFillData.append([fillHeader, dataTables[1]])
+        cutFillData = dataTables[1].drop(0)
+        splitCutFillData.append([cutHeader, cutFillData])
+        splitCutFillData.append([fillHeader, cutFillData])
     return splitCutFillData
 
 def createHeaders(projectData):
