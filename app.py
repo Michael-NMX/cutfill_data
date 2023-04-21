@@ -22,10 +22,17 @@ def splitTablesByCutFillColumns(data):
     splitCutFillData = []
     columnsForCut = ['Station', 'Cut Area (Sq.m.)']
     columnsForFill = ['Station', 'Fill Area (Sq.m.)']
+    totalRows = 0
+    startRow = 0
     for dataTables in data:
         cutHeader, fillHeader = createHeaders(dataTables[0])
         cutFillData = dataTables[1].drop(0)
         cutData, fillData = getColumnData(cutFillData, columnsForCut, columnsForFill)
+        totalRows = cutFillData.shape[0]
+        startRow = cutHeader.shape[0] + 2
+        volumeFormulas = createVolumeFormulasColumns(totalRows, startRow)
+        cutData = cutData.join(volumeFormulas)
+        fillData = fillData.join(volumeFormulas)
         splitCutFillData.append([cutHeader, cutData])
         splitCutFillData.append([fillHeader, fillData])
     return splitCutFillData
@@ -54,6 +61,24 @@ def getColumnData(dataTable, columnsForCut, columnsForFill):
     cutData = dataTable[columnsForCut]
     fillData = dataTable[columnsForFill]
     return cutData, fillData
+
+def createVolumeFormulasColumns(totalRows, startRow):
+    def createVolumeFormula(startRow, i):
+        return f'=((B{startRow + i}+B{startRow + i - 1})/2)*(A{startRow + i}-A{startRow + i  - 1})'
+    
+    def createAcumVolumeFormula(startRow, i):
+        return f'=C{startRow + i}+D{startRow + i - 1}'
+        
+    volumeHeader = 'VOLUMENES (m3)'
+    acumVolumeHeader = 'VOLUMENES ACUMULADOS (m3)'
+    volumeFormulas = [createVolumeFormula(startRow, i)  for i in range(totalRows)]
+    volumeFormulas[0] = 0
+    acumVolumeFormulas = [createAcumVolumeFormula(startRow, i) for i in range(totalRows)]
+    acumVolumeFormulas[0] = 0
+    return pd.DataFrame({
+       volumeHeader : volumeFormulas,
+       acumVolumeHeader : acumVolumeFormulas
+    }, index=range(1, totalRows + 1))
 
 def createReport(data, dirpath):
     outputPath = dirpath / 'output.xlsx'
