@@ -64,19 +64,26 @@ def getColumnData(dataTable, columnsForCut, columnsForFill):
     return cutData, fillData
 
 def createVolumeFormulasColumns(totalRows, startRow):
+    def distanceFormula(startRow, i):
+        return f'=(A{startRow + i}-A{startRow + i - 1})/2'
+    
     def createVolumeFormula(startRow, i):
-        return f'=((B{startRow + i}+B{startRow + i - 1})/2)*(A{startRow + i}-A{startRow + i  - 1})'
+        return f'=(B{startRow + i}+B{startRow + i - 1})*(C{startRow + i})'
     
     def createAcumVolumeFormula(startRow, i):
-        return f'=C{startRow + i}+D{startRow + i - 1}'
+        return f'=D{startRow + i}+E{startRow + i - 1}'
         
     volumeHeader = 'VOLUMENES (m3)'
     acumVolumeHeader = 'VOLUMENES ACUMULADOS (m3)'
+    distanceHeader = 'DISTANCIA / 2 (m)'
+    distanceFormulas = [distanceFormula(startRow, i) for i in range(totalRows)]
+    distanceFormulas[0] = 0
     volumeFormulas = [createVolumeFormula(startRow, i)  for i in range(totalRows)]
     volumeFormulas[0] = 0
     acumVolumeFormulas = [createAcumVolumeFormula(startRow, i) for i in range(totalRows)]
     acumVolumeFormulas[0] = 0
     return pd.DataFrame({
+       distanceHeader : distanceFormulas,
        volumeHeader : volumeFormulas,
        acumVolumeHeader : acumVolumeFormulas
     }, index=range(1, totalRows + 1))
