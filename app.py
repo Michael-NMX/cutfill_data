@@ -30,7 +30,7 @@ def splitTablesByCutFillColumns(data):
         cutFillData.iloc[:, 0] = cutFillData.iloc[:, 0].apply(lambda station: float(station.replace('+', '')))
         cutData, fillData = getColumnData(cutFillData, columnsForCut, columnsForFill)
         totalRows = cutFillData.shape[0]
-        startRow = cutHeader.shape[0] + 2
+        startRow = cutHeader.shape[0] + 3
         volumeFormulas = createVolumeFormulasColumns(totalRows, startRow)
         cutData = cutData.join(volumeFormulas)
         fillData = fillData.join(volumeFormulas)
@@ -91,17 +91,33 @@ def createVolumeFormulasColumns(totalRows, startRow):
 def createReport(data, dirpath):
     outputPath = dirpath / 'output.xlsx'
     for i, dataTables in enumerate(data):
-        dataRows = len(dataTables[0].index)
+        projectColumn = 1
+        projectRows = 1
+        dataRows = len(dataTables[0].index) + projectRows
         if outputPath.exists():
             with pd.ExcelWriter(outputPath, 
                 mode="a",
                 engine='openpyxl',
                 if_sheet_exists="replace"
             ) as writer:
-                dataTables[0].to_excel(writer, sheet_name=f'data_{i}', header=False, index=False)
+                dataTables[0].to_excel(
+                    writer,
+                    sheet_name=f'data_{i}', 
+                    header=False,
+                    index=False,
+                    startrow=projectRows,
+                    startcol=projectColumn
+                )
         else:    
             with pd.ExcelWriter(outputPath, mode="w", engine='openpyxl') as writer:
-                dataTables[0].to_excel(writer, sheet_name=f'data_{i}', header=False, index=False)
+                dataTables[0].to_excel(
+                    writer,
+                    sheet_name=f'data_{i}',
+                    header=False,
+                    index=False,
+                    startrow=projectRows,
+                    startcol=projectColumn
+                )
         with pd.ExcelWriter(
             outputPath,
             engine='openpyxl',
