@@ -91,17 +91,18 @@ def createVolumeFormulasColumns(totalRows, startRow):
 def createReport(data, dirpath):
     outputPath = dirpath / 'output.xlsx'
     for i, dataTables in enumerate(data):
+        dataRows = len(dataTables[0].index)
         if outputPath.exists():
             with pd.ExcelWriter(outputPath, 
                 mode="a",
                 engine='openpyxl',
                 if_sheet_exists="replace"
             ) as writer:
-                dataRows = len(dataTables[0].index)
+                # dataRows = len(dataTables[0].index)
                 dataTables[0].to_excel(writer, sheet_name=f'data_{i}', header=False, index=False)
         else:    
             with pd.ExcelWriter(outputPath, mode="w", engine='openpyxl') as writer:
-                dataRows = len(dataTables[0].index)
+                # dataRows = len(dataTables[0].index)
                 dataTables[0].to_excel(writer, sheet_name=f'data_{i}', header=False, index=False)
         with pd.ExcelWriter(
             outputPath,
