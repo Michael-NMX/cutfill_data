@@ -32,8 +32,11 @@ def splitTablesByCutFillColumns(data):
         totalRows = cutFillData.shape[0]
         startRow = cutHeader.shape[0] + 3
         volumeFormulas = createVolumeFormulasColumns(totalRows, startRow)
+        sumRow = createSumRowFormula(totalRows + startRow - 2, startRow)
         cutData = cutData.join(volumeFormulas)
+        cutData.loc[len(cutData)] = sumRow
         fillData = fillData.join(volumeFormulas)
+        fillData.loc[len(fillData)] = sumRow
         splitCutFillData.append([cutHeader, cutData])
         splitCutFillData.append([fillHeader, fillData])
     return splitCutFillData
@@ -87,6 +90,9 @@ def createVolumeFormulasColumns(totalRows, startRow):
        volumeHeader : volumeFormulas,
        acumVolumeHeader : acumVolumeFormulas
     }, index=range(1, totalRows + 1))
+
+def createSumRowFormula(totalRows, startRow):
+    return ['-', '-', 'SUMA', f'=SUM(D{startRow}:D{totalRows})', '-']
 
 def createReport(data, dirpath):
     outputPath = dirpath / 'output.xlsx'
