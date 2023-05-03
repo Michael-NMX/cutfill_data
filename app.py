@@ -98,11 +98,9 @@ def createReport(data, dirpath):
                 engine='openpyxl',
                 if_sheet_exists="replace"
             ) as writer:
-                # dataRows = len(dataTables[0].index)
                 dataTables[0].to_excel(writer, sheet_name=f'data_{i}', header=False, index=False)
         else:    
             with pd.ExcelWriter(outputPath, mode="w", engine='openpyxl') as writer:
-                # dataRows = len(dataTables[0].index)
                 dataTables[0].to_excel(writer, sheet_name=f'data_{i}', header=False, index=False)
         with pd.ExcelWriter(
             outputPath,
