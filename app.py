@@ -1,7 +1,14 @@
 import pathlib
 import datetime
+import json
 import pandas as pd
 
+
+def loadSettings():
+    settings_path = pathlib.Path('.\\app_settings.json')
+    with open(settings_path, "r") as file:
+        settings = json.load(file)
+    return settings
 
 def getDirpath():
     dirpathFromUser = input("Path to directory containing HTML files: ")
@@ -134,6 +141,7 @@ def createReport(data, dirpath):
 
 
 if __name__ == '__main__':
+    SETTINGS = loadSettings()
     dirpath = getDirpath()
     data, filepaths = readFiles(dirpath)
     cutFillData = splitTablesByCutFillColumns(data)
