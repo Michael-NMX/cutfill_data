@@ -27,23 +27,33 @@ def extractDataFromFile(filepath):
 
 def splitTablesByCutFillColumns(data):
     splitCutFillData = []
-    columnsForCut = ['Station', 'Cut Area (Sq.m.)']
-    columnsForFill = ['Station', 'Fill Area (Sq.m.)']
-    totalRows = 0
-    startRow = 0
+    gapRowsBeforeProjectData = SETTINGS["gapRowsBeforeProjectData"]
+    gapRowsBeforeVolumeData = SETTINGS["gapRowsBeforeVolumeData"]
+    gapRowsBeforeSumVolumeData = SETTINGS["gapRowsBeforeSumVolumeData"]
+    totalVolumeRows = 0
+    projectDataRows = 0
+    startRowForVolumeData = 0
     for dataTables in data:
         cutHeader, fillHeader = createHeaders(dataTables[0])
         cutFillData = dataTables[1].drop(0)
         cutFillData.iloc[:, 0] = cutFillData.iloc[:, 0].apply(lambda station: float(station.replace('+', '')))
-        cutData, fillData = getColumnData(cutFillData, columnsForCut, columnsForFill)
-        totalRows = cutFillData.shape[0]
-        startRow = cutHeader.shape[0] + 3
-        volumeFormulas = createVolumeFormulasColumns(totalRows, startRow)
-        sumRow = createSumRowFormula(totalRows + startRow - 2, startRow)
+        cutData, fillData = getColumnData(cutFillData)
+        totalVolumeRows = cutFillData.shape[0]
+        projectDataRows = cutHeader.shape[0]
+        headerVolumeDataRows = cutHeader.shape[1]
+        startRowForVolumeData = gapRowsBeforeProjectData \
+                                + projectDataRows \
+                                + gapRowsBeforeVolumeData \
+                                + headerVolumeDataRows
+        volumeFormulas = createVolumeFormulasColumns(totalVolumeRows, startRowForVolumeData)
+        sumRow = totalVolumeRows \
+                + startRowForVolumeData \
+                - gapRowsBeforeSumVolumeData
+        sumVolumeRow = createSumRowFormula(sumRow, startRowForVolumeData)
         cutData = cutData.join(volumeFormulas)
-        cutData.loc[len(cutData)] = sumRow
+        cutData.loc[sumRow] = sumVolumeRow
         fillData = fillData.join(volumeFormulas)
-        fillData.loc[len(fillData)] = sumRow
+        fillData.loc[sumRow] = sumVolumeRow
         splitCutFillData.append([cutHeader, cutData])
         splitCutFillData.append([fillHeader, fillData])
     return splitCutFillData
@@ -52,28 +62,36 @@ def createHeaders(projectData):
     road = projectData.iloc[1,0][10:]
     startStation = projectData.iloc[3,0][11:]
     endStation = projectData.iloc[4,0][9:]
+    projectTitle = SETTINGS['projectTitle']
+    roadTitle = f'{road}'
+    cutVolumeTitle = SETTINGS['cutVolumeTitle']
+    fillVolumeTitle = SETTINGS['fillVolumeTitle']
+    stationRange = f'DEL KM {startStation} AL KM {endStation}'
+    date = f'{datetime.date.today()}'
     cutHeader = pd.DataFrame([
-        'PROYECTO',
-        f'{road}',
-        'VOLÚMENES DE CORTE',
-        f'DEL KM {startStation} AL KM {endStation}',
-        f'{datetime.date.today()}'
+        projectTitle,
+        roadTitle,
+        cutVolumeTitle,
+        stationRange,
+        date
     ])
     fillHeader = pd.DataFrame([
-        'PROYECTO',
-        f'{road}',
-        'VOLÚMENES DE RELLENO',
-        f'DEL KM {startStation} AL KM {endStation}',
-        f'{datetime.date.today()}'
+        projectTitle,
+        roadTitle,
+        fillVolumeTitle,
+        stationRange,
+        date
     ])
     return cutHeader, fillHeader
 
-def getColumnData(dataTable, columnsForCut, columnsForFill):
+def getColumnData(dataTable):
+    columnsForCut = SETTINGS['columnsForCut']
+    columnsForFill = SETTINGS['columnsForFill']
     cutData = dataTable[columnsForCut]
     fillData = dataTable[columnsForFill]
     return cutData, fillData
 
-def createVolumeFormulasColumns(totalRows, startRow):
+def createVolumeFormulasColumns(endRow, startRow):
     def distanceFormula(startRow, i):
         return f'=(A{startRow + i}-A{startRow + i - 1})/2'
     
@@ -83,30 +101,32 @@ def createVolumeFormulasColumns(totalRows, startRow):
     def createAcumVolumeFormula(startRow, i):
         return f'=D{startRow + i}+E{startRow + i - 1}'
         
-    volumeHeader = 'VOLUMENES (m3)'
-    acumVolumeHeader = 'VOLUMENES ACUMULADOS (m3)'
-    distanceHeader = 'DISTANCIA / 2 (m)'
-    distanceFormulas = [distanceFormula(startRow, i) for i in range(totalRows)]
+    volumeHeader = SETTINGS['volumeHeader']
+    acumVolumeHeader = SETTINGS['acumVolumeHeader']
+    distanceHeader = SETTINGS['distanceHeader']
+    indexStep = 0
+    distanceFormulas = [distanceFormula(startRow, i) for i in range(endRow)]
     distanceFormulas[0] = 0
-    volumeFormulas = [createVolumeFormula(startRow, i)  for i in range(totalRows)]
+    volumeFormulas = [createVolumeFormula(startRow, i)  for i in range(endRow)]
     volumeFormulas[0] = 0
-    acumVolumeFormulas = [createAcumVolumeFormula(startRow, i) for i in range(totalRows)]
+    acumVolumeFormulas = [createAcumVolumeFormula(startRow, i) for i in range(endRow)]
     acumVolumeFormulas[0] = 0
+    indexStep = 1
     return pd.DataFrame({
        distanceHeader : distanceFormulas,
        volumeHeader : volumeFormulas,
        acumVolumeHeader : acumVolumeFormulas
-    }, index=range(1, totalRows + 1))
+    }, index=range(indexStep, endRow + indexStep))
 
-def createSumRowFormula(totalRows, startRow):
-    return ['-', '-', 'SUMA', f'=SUM(D{startRow}:D{totalRows})', '-']
+def createSumRowFormula(endRow, startRow):
+    return ['-', '-', 'SUMA', f'=SUM(D{startRow}:D{endRow})', '-']
 
 def createReport(data, dirpath):
     outputPath = dirpath / 'output.xlsx'
+    startRowForProjectData = SETTINGS['startRowForProjectData']
+    startColumnForProjectData = SETTINGS['startColumnForProjectData']
+    startRowForVolumeData = SETTINGS['startRowForVolumeData']
     for i, dataTables in enumerate(data):
-        projectColumn = 1
-        projectRows = 1
-        dataRows = len(dataTables[0].index) + projectRows
         if outputPath.exists():
             with pd.ExcelWriter(outputPath, 
                 mode="a",
@@ -118,8 +138,8 @@ def createReport(data, dirpath):
                     sheet_name=f'data_{i}', 
                     header=False,
                     index=False,
-                    startrow=projectRows,
-                    startcol=projectColumn
+                    startrow=startRowForProjectData,
+                    startcol=startColumnForProjectData
                 )
         else:    
             with pd.ExcelWriter(outputPath, mode="w", engine='openpyxl') as writer:
@@ -128,8 +148,8 @@ def createReport(data, dirpath):
                     sheet_name=f'data_{i}',
                     header=False,
                     index=False,
-                    startrow=projectRows,
-                    startcol=projectColumn
+                    startrow=startRowForProjectData,
+                    startcol=startColumnForProjectData
                 )
         with pd.ExcelWriter(
             outputPath,
@@ -137,7 +157,11 @@ def createReport(data, dirpath):
             mode='a',
             if_sheet_exists="overlay"
         ) as writer:
-            dataTables[1].to_excel(writer, sheet_name=f'data_{i}', startrow=dataRows, index=False)
+            dataTables[1].to_excel(
+                writer,
+                sheet_name=f'data_{i}',
+                startrow=startRowForVolumeData,
+                index=False)
 
 
 if __name__ == '__main__':
